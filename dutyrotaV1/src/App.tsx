@@ -28,7 +28,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* "/" serves as the admin login page (no separate landing page for now) */}
+            {/* "/" serves as the admin login ffefewpage (no separate landing page for now) */}
             <Route path="/" element={<AdminLogin />} />
 
             {/* Admin routes - protected by AdminGuard */}
