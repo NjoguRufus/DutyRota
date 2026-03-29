@@ -51,11 +51,11 @@ export default function StaffDashboard() {
       <main className="mx-auto min-h-0 w-full max-w-5xl flex-1 overflow-y-auto overflow-x-hidden px-4 pb-16 pt-8 sm:px-6 sm:pt-10">
         {/* Page header — not a heavy card */}
         <div className="mb-10 flex flex-col gap-6 sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Staff portal
             </p>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
               Welcome, {profileLoading ? "…" : displayName}
             </h1>
             <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -76,7 +76,7 @@ export default function StaffDashboard() {
           <Button
             type="button"
             variant="outline"
-            className="h-11 shrink-0 gap-2 rounded-xl border-border/80 bg-card/80 shadow-sm backdrop-blur-sm hover:bg-accent"
+            className="h-11 w-full shrink-0 gap-2 rounded-xl border-border/80 bg-card/80 shadow-sm backdrop-blur-sm hover:bg-accent sm:w-auto"
             onClick={() => navigate("/staff/schedule")}
           >
             Full schedule

@@ -48,7 +48,11 @@ export function NotificationPopover({ userId }: NotificationPopoverProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 overflow-hidden rounded-xl border-border/80 p-0 shadow-lg" align="end">
+      <PopoverContent
+        className="w-[min(20rem,calc(100vw-1.5rem))] max-w-[20rem] overflow-hidden rounded-xl border-border/80 p-0 shadow-lg"
+        align="end"
+        sideOffset={8}
+      >
         <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
           <p className="text-sm font-semibold text-foreground">Notifications</p>
           <p className="text-[11px] text-muted-foreground">Live updates from your team</p>

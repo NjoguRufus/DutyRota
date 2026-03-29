@@ -1,4 +1,4 @@
-import { LogOut, User } from "lucide-react";
+import { LogOut, Moon, Sun, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +9,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { cn } from "@/lib/utils";
 
 interface AdminProfileMenuProps {
@@ -18,6 +20,7 @@ interface AdminProfileMenuProps {
 
 export function AdminProfileMenu({ displayName }: AdminProfileMenuProps) {
   const { user, logout } = useAuth();
+  const { preferences, setPreferences } = useUserPreferences();
   const navigate = useNavigate();
 
   const name = user?.name ?? displayName ?? "Admin";
@@ -48,7 +51,10 @@ export function AdminProfileMenu({ displayName }: AdminProfileMenuProps) {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 rounded-xl border-border/80 p-2 shadow-lg">
+      <DropdownMenuContent
+        align="end"
+        className="w-[min(16rem,calc(100vw-1.25rem))] max-w-sm rounded-xl border-border/80 p-2 shadow-lg"
+      >
         <DropdownMenuLabel className="space-y-3 rounded-lg bg-muted/40 px-3 py-3 font-normal">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15">
@@ -64,6 +70,37 @@ export function AdminProfileMenu({ displayName }: AdminProfileMenuProps) {
             <p className="truncate font-medium text-foreground">{email}</p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuItem
+          className="flex w-full cursor-default items-center gap-3 rounded-lg px-2 py-2.5 focus:bg-accent/60"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/80 text-muted-foreground">
+            {preferences.theme === "dark" ? (
+              <Moon className="h-4 w-4" aria-hidden />
+            ) : (
+              <Sun className="h-4 w-4" aria-hidden />
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">Appearance</p>
+            <p className="text-[11px] text-muted-foreground">
+              {preferences.theme === "dark" ? "Dark mode on" : "Light mode"}
+            </p>
+          </div>
+          <Switch
+            checked={preferences.theme === "dark"}
+            onCheckedChange={(on) =>
+              setPreferences({
+                ...preferences,
+                theme: on ? "dark" : "light",
+              })
+            }
+            aria-label="Toggle dark mode"
+            className="shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem
           onClick={handleLogout}

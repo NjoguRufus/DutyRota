@@ -88,10 +88,12 @@ export default function Reports() {
 
   return (
     <DashboardLayout userName={user?.name ?? "Admin"}>
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Reports</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-3xl">
+            Reports
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Generate reports from live rota and staff data in Firestore
           </p>
         </div>
@@ -105,9 +107,9 @@ export default function Reports() {
           </div>
         )}
 
-        <div className="bg-card rounded-xl border border-border p-6 mb-6">
-          <h2 className="font-semibold text-foreground mb-4">Generate report</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mb-6 rounded-xl border border-border bg-card p-4 sm:p-6">
+          <h2 className="mb-4 font-semibold text-foreground">Generate report</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
                 Report type
@@ -145,11 +147,11 @@ export default function Reports() {
                 Weekly: week containing this date. Monthly & coverage: calendar month of this date.
               </p>
             </div>
-            <div className="flex items-end">
+            <div className="flex items-stretch sm:col-span-2 sm:items-end lg:col-span-1">
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating || loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {isGenerating ? (
                   <>
@@ -189,17 +191,17 @@ export default function Reports() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+              <table className="w-full min-w-[520px] text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-3 px-5 font-medium text-muted-foreground">
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
                       Report name
                     </th>
-                    <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden md:table-cell">
+                    <th className="hidden px-3 py-2.5 text-left text-xs font-medium text-muted-foreground md:table-cell sm:px-5 sm:py-3 sm:text-sm">
                       Date
                     </th>
-                    <th className="text-left py-3 px-5 font-medium text-muted-foreground">
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
                       Actions
                     </th>
                   </tr>
@@ -208,14 +210,16 @@ export default function Reports() {
                   {reports.map((report) => (
                     <tr
                       key={report.id}
-                      className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors"
+                      className="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
                     >
-                      <td className="py-3 px-5 text-foreground">{report.reportName}</td>
-                      <td className="py-3 px-5 text-foreground hidden md:table-cell">
+                      <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">
+                        {report.reportName}
+                      </td>
+                      <td className="hidden px-3 py-2.5 text-foreground md:table-cell sm:px-5 sm:py-3">
                         {formatReportDate(report.reportDate)}
                       </td>
-                      <td className="py-3 px-5">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2.5 sm:px-5 sm:py-3">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             onClick={() => handleDownload(report.id)}
                             className="flex items-center gap-1.5 text-primary text-sm font-medium hover:underline"
@@ -253,8 +257,8 @@ export default function Reports() {
             onClick={handleDeleteCancel}
             aria-hidden="true"
           />
-          <div className="relative bg-card rounded-xl border border-border p-6 w-full max-w-md mx-4 shadow-xl">
-            <div className="flex items-start gap-4">
+          <div className="relative mx-4 max-h-[min(90dvh,720px)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-4 shadow-xl sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
               <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
               </div>
@@ -271,18 +275,18 @@ export default function Reports() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-3 mt-6">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
               <button
                 onClick={handleDeleteCancel}
                 disabled={loading}
-                className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                className="min-h-11 w-full rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50 sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={loading}
-                className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-opacity hover:opacity-90 disabled:opacity-50 sm:w-auto"
               >
                 {loading ? (
                   <>

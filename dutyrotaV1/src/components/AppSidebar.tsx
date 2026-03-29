@@ -49,7 +49,7 @@ export function AppSidebar({
   return (
     <aside
       style={{ width: widthPx }}
-      className="relative hidden h-full min-h-0 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-card via-card to-muted/25 shadow-[4px_0_32px_-16px_rgba(15,23,42,0.12)] transition-[width] duration-200 ease-out md:flex"
+      className="relative hidden h-full min-h-0 shrink-0 flex-col border-r border-border/80 bg-gradient-to-b from-card via-card to-muted/25 shadow-[4px_0_32px_-16px_rgba(15,23,42,0.12)] transition-[width] duration-200 ease-out lg:flex"
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 

@@ -40,7 +40,7 @@ export default function ViewSchedule() {
     <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <StaffPortalHeader staffProfile={staffProfile} profileLoading={profileLoading} />
 
-      <main className="mx-auto mt-4 min-h-0 w-full max-w-3xl flex-1 overflow-y-auto overflow-x-hidden px-4 pb-12 sm:px-6">
+      <main className="mx-auto mt-3 min-h-0 w-full max-w-3xl flex-1 overflow-y-auto overflow-x-hidden px-4 pb-14 sm:mt-4 sm:px-6 sm:pb-12">
         <button
           type="button"
           onClick={() => navigate("/staff/dashboard")}
@@ -49,7 +49,9 @@ export default function ViewSchedule() {
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </button>
 
-        <h1 className="text-2xl font-bold text-foreground mb-2">My Schedule</h1>
+        <h1 className="mb-2 text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-3xl">
+          My Schedule
+        </h1>
         <p className="text-muted-foreground text-sm mb-6">
           Duty shifts for {staffProfile?.fullName ?? user?.name ?? "Staff Member"}
         </p>
@@ -84,28 +86,34 @@ export default function ViewSchedule() {
                   <p className="text-muted-foreground text-sm">No upcoming shifts scheduled</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+                  <table className="w-full min-w-[420px] text-sm">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Date</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Shift Time</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Department</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Date
+                        </th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Shift Time
+                        </th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Department
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {upcomingShifts.map((shift) => (
                         <tr
                           key={shift.id}
-                          className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors"
+                          className="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
                         >
-                          <td className="py-3 px-5 text-foreground font-medium">
+                          <td className="px-3 py-2.5 font-medium text-foreground sm:px-5 sm:py-3">
                             {formatDate(shift.shiftDate)}
                           </td>
-                          <td className="py-3 px-5 text-foreground">
+                          <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">
                             {getShiftTimeDisplay(shift.shiftTime)}
                           </td>
-                          <td className="py-3 px-5 text-foreground">{shift.department}</td>
+                          <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">{shift.department}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -121,28 +129,34 @@ export default function ViewSchedule() {
                     Past shifts ({pastShifts.length})
                   </h2>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+                  <table className="w-full min-w-[420px] text-sm">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Date</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Shift Time</th>
-                        <th className="text-left py-3 px-5 font-medium text-muted-foreground">Department</th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Date
+                        </th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Shift Time
+                        </th>
+                        <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                          Department
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {pastShifts.slice(0, 5).map((shift) => (
                         <tr
                           key={shift.id}
-                          className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors opacity-70"
+                          className="border-b border-border opacity-70 transition-colors last:border-0 hover:bg-accent/50"
                         >
-                          <td className="py-3 px-5 text-foreground">
+                          <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">
                             {formatDate(shift.shiftDate)}
                           </td>
-                          <td className="py-3 px-5 text-foreground">
+                          <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">
                             {getShiftTimeDisplay(shift.shiftTime)}
                           </td>
-                          <td className="py-3 px-5 text-foreground">{shift.department}</td>
+                          <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">{shift.department}</td>
                         </tr>
                       ))}
                     </tbody>

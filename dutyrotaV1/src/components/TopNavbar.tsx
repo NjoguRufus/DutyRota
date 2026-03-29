@@ -1,5 +1,4 @@
 import { PanelLeft, Search } from "lucide-react";
-import { MobileSidebar } from "./MobileSidebar";
 import { NotificationPopover } from "@/components/NotificationPopover";
 import { AdminProfileMenu } from "@/components/AdminProfileMenu";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,15 +16,14 @@ export function TopNavbar({ userName, onDesktopSidebarToggle }: TopNavbarProps) 
   const displayName = user?.name ?? userName ?? "Admin";
 
   return (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-border/80 bg-card/85 shadow-sm backdrop-blur-md">
+    <header className="sticky top-0 z-30 hidden shrink-0 border-b border-border/80 bg-card/85 shadow-sm backdrop-blur-md lg:block">
       <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <MobileSidebar />
           {onDesktopSidebarToggle ? (
             <button
               type="button"
               onClick={onDesktopSidebarToggle}
-              className="hidden rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:inline-flex"
+              className="hidden rounded-xl p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
               aria-label="Toggle sidebar width"
             >
               <PanelLeft className="h-5 w-5" />

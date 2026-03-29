@@ -1,5 +1,7 @@
 import { AppSidebar } from "./AppSidebar";
 import { TopNavbar } from "./TopNavbar";
+import { AdminMobileHeader } from "@/components/layout/AdminMobileHeader";
+import { AdminMobileBottomNav } from "@/components/layout/AdminMobileBottomNav";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAdminSidebar } from "@/hooks/useAdminSidebar";
 
@@ -24,14 +26,16 @@ export function DashboardLayout({ children, userName }: DashboardLayoutProps) {
           onToggleCollapse={sidebar.toggleCollapsed}
           onResizePointerDown={(clientX) => sidebar.startResize(clientX)}
         />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <AdminMobileHeader userName={userName} />
           <TopNavbar
             userName={userName}
             onDesktopSidebarToggle={sidebar.toggleCollapsed}
           />
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 sm:p-8">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 xl:p-8 max-lg:pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]">
             {children}
           </main>
+          <AdminMobileBottomNav />
         </div>
       </div>
     </TooltipProvider>

@@ -81,17 +81,19 @@ export default function AdminDashboard() {
   return (
     <DashboardLayout userName={user?.name ?? "Admin"}>
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Admin Dashboard</h1>
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-3xl">
+              Admin Dashboard
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">Welcome, {user?.name ?? "Admin"}</p>
           </div>
           <button
             type="button"
             onClick={() => navigate("/admin/rota-schedules", { state: { openCreateRota: true } })}
-            className="hidden items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-opacity hover:opacity-90 sm:inline-flex"
+            className="flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-medium text-secondary-foreground transition-opacity hover:opacity-90 sm:w-auto"
           >
-            Create Rota <ArrowRight className="h-4 w-4" />
+            Create Rota <ArrowRight className="h-4 w-4 shrink-0" />
           </button>
         </div>
 
@@ -129,12 +131,12 @@ export default function AdminDashboard() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/90 shadow-sm">
-          <div className="flex items-center justify-between border-b border-border/80 px-5 py-4">
-            <h2 className="font-semibold text-foreground">Recent schedules</h2>
+          <div className="flex flex-col gap-3 border-b border-border/80 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+            <h2 className="text-base font-semibold text-foreground sm:text-lg">Recent schedules</h2>
             <button
               type="button"
               onClick={() => navigate("/admin/rota-schedules")}
-              className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              className="inline-flex min-h-10 items-center gap-1 self-start text-sm font-medium text-primary hover:underline sm:self-auto"
             >
               View all <ArrowRight className="h-3.5 w-3.5" />
             </button>
@@ -160,16 +162,20 @@ export default function AdminDashboard() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+              <table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr className="border-b border-border/80">
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">Date</th>
-                    <th className="px-5 py-3 text-left font-medium text-muted-foreground">Staff</th>
-                    <th className="hidden px-5 py-3 text-left font-medium text-muted-foreground md:table-cell">
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                      Date
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-xs font-medium text-muted-foreground sm:px-5 sm:py-3 sm:text-sm">
+                      Staff
+                    </th>
+                    <th className="hidden px-3 py-2.5 text-left text-xs font-medium text-muted-foreground md:table-cell sm:px-5 sm:py-3 sm:text-sm">
                       Shift
                     </th>
-                    <th className="hidden px-5 py-3 text-left font-medium text-muted-foreground lg:table-cell">
+                    <th className="hidden px-3 py-2.5 text-left text-xs font-medium text-muted-foreground lg:table-cell sm:px-5 sm:py-3 sm:text-sm">
                       Department
                     </th>
                   </tr>
@@ -180,12 +186,14 @@ export default function AdminDashboard() {
                       key={schedule.id}
                       className="border-b border-border/60 transition-colors last:border-0 hover:bg-muted/40"
                     >
-                      <td className="px-5 py-3 text-foreground">{formatDate(schedule.shiftDate)}</td>
-                      <td className="px-5 py-3 text-foreground">{schedule.staffName}</td>
-                      <td className="hidden px-5 py-3 text-foreground md:table-cell">
+                      <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">
+                        {formatDate(schedule.shiftDate)}
+                      </td>
+                      <td className="px-3 py-2.5 text-foreground sm:px-5 sm:py-3">{schedule.staffName}</td>
+                      <td className="hidden px-3 py-2.5 text-foreground md:table-cell sm:px-5 sm:py-3">
                         {getShiftTimeDisplay(schedule.shiftTime)}
                       </td>
-                      <td className="hidden px-5 py-3 text-foreground lg:table-cell">
+                      <td className="hidden px-3 py-2.5 text-foreground lg:table-cell sm:px-5 sm:py-3">
                         {schedule.department}
                       </td>
                     </tr>

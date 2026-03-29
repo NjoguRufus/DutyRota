@@ -60,7 +60,7 @@ function SectionCard({
         className
       )}
     >
-      <div className="border-b border-border/70 bg-muted/20 px-5 py-4">
+      <div className="border-b border-border/70 bg-muted/20 px-4 py-3.5 sm:px-5 sm:py-4">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-5 w-5" />
@@ -73,7 +73,7 @@ function SectionCard({
           </div>
         </div>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -166,9 +166,11 @@ export default function Settings() {
 
   return (
     <DashboardLayout userName={user?.name ?? "Admin"}>
-      <div className="mx-auto max-w-3xl space-y-8">
+      <div className="mx-auto max-w-3xl space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-3xl">
+            Settings
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Profile, account security, preferences, and system information.
           </p>
@@ -241,7 +243,7 @@ export default function Settings() {
                 </p>
               ) : null}
               <div className="space-y-5">
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/10 px-4 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <Palette className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -261,7 +263,7 @@ export default function Settings() {
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/10 px-4 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <Bell className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -281,7 +283,7 @@ export default function Settings() {
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/10 px-4 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <Bell className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -299,7 +301,7 @@ export default function Settings() {
                     onCheckedChange={(on) => setDraft((d) => ({ ...d, emailSummaries: on }))}
                   />
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/10 px-4 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <LayoutGrid className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -319,7 +321,7 @@ export default function Settings() {
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/10 px-4 py-3">
+                <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div className="flex items-center gap-3">
                     <Languages className="h-4 w-4 text-muted-foreground" />
                     <div>
@@ -340,12 +342,12 @@ export default function Settings() {
                   />
                 </div>
               </div>
-              <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border/60 pt-5">
+              <div className="mt-6 flex flex-col gap-2 border-t border-border/60 pt-5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Button
                   type="button"
                   onClick={handleSavePreferences}
                   disabled={!prefsDirty || saving}
-                  className="min-w-[7rem]"
+                  className="min-h-11 w-full min-w-[7rem] sm:w-auto"
                 >
                   {saving ? (
                     <>
@@ -361,6 +363,7 @@ export default function Settings() {
                   variant="outline"
                   disabled={!prefsDirty || saving}
                   onClick={() => setDraft({ ...preferences })}
+                  className="min-h-11 w-full sm:w-auto"
                 >
                   Reset
                 </Button>
