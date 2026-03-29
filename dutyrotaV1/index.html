@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Browser tab: favicon.ico + logo.png. WhatsApp etc. use og:image (absolute URL after build). -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="__SITE_URL__/logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,14 +19,18 @@
 
     <meta property="og:title" content="Cape Media Staff Rota System" />
     <meta property="og:description" content="Cape Media Support Staff Duty Rota Management System" />
-    <meta property="og:image" content="/logo.png" />
-    <meta property="og:url" content="https://capemedia.vercel.app" />
+    <meta property="og:url" content="__SITE_URL__/" />
     <meta property="og:type" content="website" />
+    <!-- WhatsApp / Facebook / LinkedIn need a full https:// URL to show an image preview -->
+    <meta property="og:image" content="__SITE_URL__/logo.png" />
+    <meta property="og:image:secure_url" content="__SITE_URL__/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="Cape Media" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Cape Media Staff Rota System" />
     <meta name="twitter:description" content="Cape Media Support Staff Duty Rota Management System" />
-    <meta name="twitter:image" content="/logo.png" />
+    <meta name="twitter:image" content="__SITE_URL__/logo.png" />
   </head>
 
   <body>
