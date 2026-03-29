@@ -2,126 +2,128 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ============================================
-    // HELPER FUNCTIONS
-    // ============================================
-    
-    // Check if the user is authenticated
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    // Get the current user's role from their profile
+
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-    
-    // Check if the current user is an admin
+
     function isAdmin() {
       return isAuthenticated() && getUserRole() == 'admin';
     }
-    
-    // Check if the current user is staff
+
     function isStaff() {
       return isAuthenticated() && getUserRole() == 'staff';
     }
-    
-    // ============================================
-    // USERS COLLECTION
-    // User profiles with roles (admin/staff)
-    // ============================================
+
     match /users/{userId} {
-      // Users can read their own profile
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      
-      // Only admins can create/update/delete user profiles
-      // (In practice, user creation is done via Firebase Console or Admin SDK)
-      allow create, update, delete: if isAdmin();
+      allow create: if isAdmin() || temporaryBootstrapAdminProfile();
+      allow update, delete: if isAdmin();
     }
-    
-    // ============================================
-    // EMPLOYEES COLLECTION
-    // Staff members who can be assigned to rotas
-    // ============================================
-    match /employees/{employeeId} {
-      // Any authenticated user can read employees
+
+    function temporaryBootstrapAdminProfile() {
+      return request.resource.data.role == 'admin'
+        && request.resource.data.keys().hasAll(['email', 'name', 'role', 'createdAt'])
+        && request.resource.data.email is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+    }
+
+    match /staff/{staffId} {
       allow read: if isAuthenticated();
-      
-      // Only admins can create, update, or delete employees
-      allow create: if isAdmin() && validEmployeeData(request.resource.data);
-      allow update: if isAdmin() && validEmployeeData(request.resource.data);
+      allow create: if isAdmin() && validStaffCreate(request.resource.data);
+      allow update: if isAdmin() && validStaffUpdate();
       allow delete: if isAdmin();
     }
-    
-    // Validate employee data structure
-    function validEmployeeData(data) {
-      return data.keys().hasAll(['name', 'department', 'email', 'phoneNumber'])
-        && data.name is string
-        && data.name.size() > 0
-        && data.department is string
-        && data.department.size() > 0
-        && data.email is string
-        && data.email.matches('.*@.*\\..*')
-        && data.phoneNumber is string;
+
+    function validStaffCreate(data) {
+      return data.keys().hasAll(['fullName', 'department', 'email', 'phone', 'authUid', 'role', 'createdAt'])
+        && data.fullName is string && data.fullName.size() > 0
+        && data.department is string && data.department.size() > 0
+        && data.email is string && data.email.matches('.*@.*\\..*')
+        && data.phone is string
+        && data.authUid is string && data.authUid.size() > 0
+        && data.role == 'staff'
+        && data.createdAt is timestamp;
     }
-    
-    // ============================================
-    // ROTAS COLLECTION
-    // Duty shift schedules
-    // ============================================
+
+    function validStaffUpdate() {
+      return request.resource.data.authUid == resource.data.authUid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function staffCanReadRota() {
+      return isStaff() && (
+        resource.data.staffAuthUid == request.auth.uid
+        || ((!('staffAuthUid' in resource.data) || resource.data.staffAuthUid == '')
+          && resource.data.staffId == request.auth.uid)
+      );
+    }
+
     match /rotas/{rotaId} {
-      // Admins can read all rotas
-      // Staff can only read rotas assigned to them
-      allow read: if isAdmin() 
-        || (isStaff() && resource.data.staffId == request.auth.uid);
-      
-      // Only admins can create, update, or delete rotas
-      allow create: if isAdmin() && validRotaData(request.resource.data);
-      allow update: if isAdmin() && validRotaData(request.resource.data);
+      allow read: if isAdmin() || staffCanReadRota();
+      allow create: if isAdmin() && validRotaWrite(request.resource.data);
+      allow update: if isAdmin() && validRotaWrite(request.resource.data);
       allow delete: if isAdmin();
     }
-    
-    // Validate rota data structure
-    function validRotaData(data) {
-      return data.keys().hasAll(['employeeId', 'employeeName', 'shiftDate', 'shiftTime', 'department'])
-        && data.employeeId is string
-        && data.employeeName is string
+
+    function validRotaWrite(data) {
+      return data.keys().hasAll([
+          'staffId', 'staffAuthUid', 'staffName', 'shiftDate', 'shiftTime', 'department', 'status', 'createdAt'
+        ])
+        && data.staffId is string
+        && data.staffAuthUid is string
+        && data.staffName is string
         && data.shiftDate is string
         && data.shiftTime is string
-        && data.department is string;
+        && data.department is string
+        && data.status is string
+        && (data.createdAt == request.time || data.createdAt is timestamp);
     }
-    
-    // ============================================
-    // REPORTS COLLECTION
-    // Generated reports
-    // ============================================
+
+    function validNotificationCreate(data) {
+      // createdAt: client uses serverTimestamp(); rules must use request.time (see Firebase docs).
+      return data.keys().hasAll([
+          'userType', 'targetUserId', 'title', 'message', 'type', 'read', 'createdAt'
+        ])
+        && (data.userType == 'staff' || data.userType == 'admin')
+        && data.targetUserId is string
+        && data.targetUserId.size() > 0
+        && data.title is string
+        && data.message is string
+        && (data.type == 'rota_assigned' || data.type == 'system' || data.type == 'staff_created')
+        && data.read is bool
+        && (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function notificationOwnerRead() {
+      return resource.data.targetUserId == request.auth.uid;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && notificationOwnerRead();
+      allow create: if isAdmin() && validNotificationCreate(request.resource.data);
+      allow update: if isAuthenticated() && notificationOwnerRead();
+      allow delete: if isAdmin();
+    }
+
     match /reports/{reportId} {
-      // Only admins can access reports
       allow read, write: if isAdmin();
     }
-    
-    // ============================================
-    // DEPARTMENTS COLLECTION (optional)
-    // List of departments
-    // ============================================
+
     match /departments/{departmentId} {
-      // Any authenticated user can read departments
       allow read: if isAuthenticated();
-      
-      // Only admins can modify departments
       allow write: if isAdmin();
     }
-    
-    // ============================================
-    // SETTINGS COLLECTION (optional)
-    // System settings
-    // ============================================
+
     match /settings/{settingId} {
-      // Any authenticated user can read settings
       allow read: if isAuthenticated();
-      
-      // Only admins can modify settings
       allow write: if isAdmin();
     }
   }

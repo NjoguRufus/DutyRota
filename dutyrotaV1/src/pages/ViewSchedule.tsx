@@ -2,67 +2,47 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, CalendarDays, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useRotas, Rota } from "@/hooks/useRotas";
-import { formatDate, getShiftTimeDisplay } from "@/lib/rotaData";
+import { useStaffRotas } from "@/hooks/useStaffRotas";
+import { getStaffByAuthUid } from "@/services/staffService";
+import type { StaffMember } from "@/services/staffService";
+import { StaffPortalHeader } from "@/components/StaffPortalHeader";
+import { formatDate, getShiftTimeDisplay } from "@/lib/rotaUtils";
 
 export default function ViewSchedule() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { getStaffRotas } = useRotas();
+  const { user } = useAuth();
+  const { rotas, loading, error } = useStaffRotas(user?.uid);
 
-  const [upcomingShifts, setUpcomingShifts] = useState<Rota[]>([]);
-  const [pastShifts, setPastShifts] = useState<Rota[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [staffProfile, setStaffProfile] = useState<StaffMember | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStaffRotas() {
-      if (user?.name) {
-        setLoading(true);
-        const staffRotas = await getStaffRotas(user.name);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const upcoming = staffRotas.filter(
-          (rota) => new Date(rota.shiftDate) >= today
-        );
-
-        const past = staffRotas
-          .filter((rota) => new Date(rota.shiftDate) < today)
-          .reverse();
-
-        setUpcomingShifts(upcoming);
-        setPastShifts(past);
-        setLoading(false);
-      }
+    if (!user?.uid) {
+      setStaffProfile(null);
+      setProfileLoading(false);
+      return;
     }
-    loadStaffRotas();
-  }, [user?.name, getStaffRotas]);
+    setProfileLoading(true);
+    getStaffByAuthUid(user.uid)
+      .then(setStaffProfile)
+      .finally(() => setProfileLoading(false));
+  }, [user?.uid]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/staff/login");
-  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingShifts = rotas.filter((rota) => new Date(rota.shiftDate) >= today);
+  const pastShifts = rotas
+    .filter((rota) => new Date(rota.shiftDate) < today)
+    .sort((a, b) => new Date(b.shiftDate).getTime() - new Date(a.shiftDate).getTime());
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">CM</span>
-          </div>
-          <span className="font-semibold text-foreground text-sm">Cape Media Staff Portal</span>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-muted-foreground hover:text-destructive transition-colors"
-        >
-          Logout
-        </button>
-      </header>
+    <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+      <StaffPortalHeader staffProfile={staffProfile} profileLoading={profileLoading} />
 
-      <main className="max-w-3xl mx-auto p-6 mt-4">
+      <main className="mx-auto mt-4 min-h-0 w-full max-w-3xl flex-1 overflow-y-auto overflow-x-hidden px-4 pb-12 sm:px-6">
         <button
+          type="button"
           onClick={() => navigate("/staff/dashboard")}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
@@ -71,24 +51,28 @@ export default function ViewSchedule() {
 
         <h1 className="text-2xl font-bold text-foreground mb-2">My Schedule</h1>
         <p className="text-muted-foreground text-sm mb-6">
-          Duty shifts for {user?.name ?? "Staff Member"}
+          Duty shifts for {staffProfile?.fullName ?? user?.name ?? "Staff Member"}
         </p>
 
-        {/* Loading State */}
+        {error && (
+          <div className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+
         {loading && (
           <div className="bg-card rounded-xl border border-border p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            <p className="text-muted-foreground text-sm mt-3">Loading your schedule...</p>
+            <p className="text-muted-foreground text-sm mt-3">Loading your schedule…</p>
           </div>
         )}
 
         {!loading && (
           <>
-            {/* Upcoming Shifts */}
             <div className="bg-card rounded-xl border border-border mb-6">
               <div className="p-5 border-b border-border">
                 <h2 className="font-semibold text-foreground">
-                  Upcoming Shifts ({upcomingShifts.length})
+                  Upcoming shifts ({upcomingShifts.length})
                 </h2>
               </div>
 
@@ -97,9 +81,7 @@ export default function ViewSchedule() {
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                     <CalendarDays className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <p className="text-muted-foreground text-sm">
-                    No upcoming shifts scheduled
-                  </p>
+                  <p className="text-muted-foreground text-sm">No upcoming shifts scheduled</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -132,12 +114,11 @@ export default function ViewSchedule() {
               )}
             </div>
 
-            {/* Past Shifts */}
             {pastShifts.length > 0 && (
               <div className="bg-card rounded-xl border border-border">
                 <div className="p-5 border-b border-border">
                   <h2 className="font-semibold text-foreground">
-                    Past Shifts ({pastShifts.length})
+                    Past shifts ({pastShifts.length})
                   </h2>
                 </div>
                 <div className="overflow-x-auto">

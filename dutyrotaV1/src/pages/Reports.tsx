@@ -2,13 +2,22 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Download, FileText, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useReports } from "@/hooks/useReports";
-import { ReportType, formatReportDate } from "@/lib/reportData";
+import { useReports, type ReportType } from "@/hooks/useReports";
 import { toast } from "sonner";
+import { userFacingFirestoreActionError } from "@/lib/firebaseQueryErrors";
 
 export default function Reports() {
   const { user } = useAuth();
-  const { reports, generateReport, downloadReport, removeReport, reportTypes, loading } = useReports();
+  const {
+    reports,
+    generateReport,
+    downloadReport,
+    removeReport,
+    reportTypes,
+    formatReportDate,
+    loading,
+    error,
+  } = useReports();
 
   const [formData, setFormData] = useState({
     reportType: "weekly" as ReportType,
@@ -36,9 +45,9 @@ export default function Reports() {
     setIsGenerating(true);
     try {
       await generateReport(formData.reportType, formData.reportDate);
-      toast.success("Report generated successfully");
-    } catch (error) {
-      toast.error("Failed to generate report");
+      toast.success("Report generated and saved");
+    } catch (err) {
+      toast.error(userFacingFirestoreActionError("generateReport", err));
     } finally {
       setIsGenerating(false);
     }
@@ -63,10 +72,10 @@ export default function Reports() {
   const handleDeleteConfirm = async () => {
     if (!deleteModal.reportId) return;
 
-    const success = await removeReport(deleteModal.reportId);
-    if (success) {
+    try {
+      await removeReport(deleteModal.reportId);
       toast.success("Report deleted");
-    } else {
+    } catch {
       toast.error("Failed to delete report");
     }
 
@@ -82,16 +91,26 @@ export default function Reports() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">Reports</h1>
-          <p className="text-muted-foreground text-sm mt-1">Generate and view reports</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            Generate reports from live rota and staff data in Firestore
+          </p>
         </div>
 
-        {/* Generate Report */}
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-sm"
+          >
+            {error}
+          </div>
+        )}
+
         <div className="bg-card rounded-xl border border-border p-6 mb-6">
-          <h2 className="font-semibold text-foreground mb-4">Generate Report</h2>
+          <h2 className="font-semibold text-foreground mb-4">Generate report</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Report Type
+                Report type
               </label>
               <select
                 value={formData.reportType}
@@ -103,9 +122,9 @@ export default function Reports() {
                 }
                 className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {Object.entries(reportTypes).map(([key, label]) => (
+                {(Object.keys(reportTypes) as ReportType[]).map((key) => (
                   <option key={key} value={key}>
-                    {label}
+                    {reportTypes[key]}
                   </option>
                 ))}
               </select>
@@ -122,6 +141,9 @@ export default function Reports() {
                 }
                 className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Weekly: week containing this date. Monthly & coverage: calendar month of this date.
+              </p>
             </div>
             <div className="flex items-end">
               <button
@@ -137,7 +159,7 @@ export default function Reports() {
                 ) : (
                   <>
                     <FileText className="h-4 w-4" />
-                    Generate Report
+                    Generate report
                   </>
                 )}
               </button>
@@ -145,11 +167,10 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* Reports Table */}
         <div className="bg-card rounded-xl border border-border">
           <div className="p-5 border-b border-border">
             <h2 className="font-semibold text-foreground">
-              Previous Reports ({reports.length})
+              Saved reports ({reports.length})
             </h2>
           </div>
 
@@ -164,7 +185,7 @@ export default function Reports() {
                 <FileText className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-muted-foreground text-sm">
-                No reports generated yet. Create your first report above.
+                No saved reports yet. Generate one above.
               </p>
             </div>
           ) : (
@@ -173,7 +194,7 @@ export default function Reports() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-5 font-medium text-muted-foreground">
-                      Report Name
+                      Report name
                     </th>
                     <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden md:table-cell">
                       Date
@@ -220,9 +241,8 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {deleteModal.open && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           role="dialog"
           aria-modal="true"
@@ -240,14 +260,14 @@ export default function Reports() {
               </div>
               <div className="flex-1">
                 <h3 id="delete-report-modal-title" className="text-lg font-semibold text-foreground">
-                  Delete Report
+                  Delete report
                 </h3>
                 <p className="text-muted-foreground text-sm mt-1">
                   Are you sure you want to delete{" "}
                   <span className="font-medium text-foreground">
                     {deleteModal.reportName}
                   </span>
-                  ? This action cannot be undone.
+                  ? This cannot be undone.
                 </p>
               </div>
             </div>

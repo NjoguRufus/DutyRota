@@ -2,14 +2,10 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   AppUser,
   initAuthListener,
-  initMockAuth,
   login as firebaseLogin,
   logout as firebaseLogout,
-  mockLogin,
-  mockLogout,
   onAuthChange,
 } from "@/lib/auth";
-import { USE_MOCK_AUTH } from "@/lib/config";
 
 interface AuthContextType {
   user: AppUser | null;
@@ -31,58 +27,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (USE_MOCK_AUTH) {
-      // Initialize mock auth from localStorage
-      initMockAuth();
-      setLoading(false);
-    } else {
-      // Initialize Firebase auth listener
-      const unsubscribe = initAuthListener();
-      
-      // Give it a moment to check auth state
-      const timeout = setTimeout(() => setLoading(false), 1000);
-      
-      return () => {
-        unsubscribe();
-        clearTimeout(timeout);
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    // Subscribe to auth changes
-    const unsubscribe = onAuthChange((newUser) => {
+    const offAuth = onAuthChange((newUser) => {
       setUser(newUser);
       setLoading(false);
     });
-
-    return unsubscribe;
+    const offListener = initAuthListener();
+    return () => {
+      offAuth();
+      offListener();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      if (USE_MOCK_AUTH) {
-        const result = mockLogin(email, password);
-        setLoading(false);
-        return { success: result.success, error: result.error };
-      } else {
-        const result = await firebaseLogin(email, password);
-        setLoading(false);
-        return { success: result.success, error: result.error };
-      }
-    } catch (error) {
+      const result = await firebaseLogin(email, password);
+      setLoading(false);
+      return { success: result.success, error: result.error };
+    } catch {
       setLoading(false);
       return { success: false, error: "An unexpected error occurred" };
     }
   };
 
   const logout = async () => {
-    if (USE_MOCK_AUTH) {
-      mockLogout();
-    } else {
-      await firebaseLogout();
-    }
+    await firebaseLogout();
   };
 
   const value: AuthContextType = {

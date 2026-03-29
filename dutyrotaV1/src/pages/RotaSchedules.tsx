@@ -1,18 +1,56 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Pencil, Trash2, AlertTriangle, CalendarDays, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRotas } from "@/hooks/useRotas";
-import { formatDate, getShiftTimeDisplay } from "@/lib/rotaData";
+import { useStaff } from "@/hooks/useStaff";
+import { CreateRotaDialog } from "@/components/rota/CreateRotaDialog";
+import { formatDate, getShiftTimeDisplay } from "@/lib/rotaUtils";
 import { toast } from "sonner";
 
 export default function RotaSchedules() {
-  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const { rotas, removeRota, loading } = useRotas();
+  const { rotas, removeRota, loading, error } = useRotas();
+  const { staff } = useStaff();
 
-  // Delete confirmation state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editRotaId, setEditRotaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const st = location.state as { openCreateRota?: boolean } | null;
+    if (st?.openCreateRota) {
+      setCreateOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const rid = searchParams.get("editRota");
+    if (rid) {
+      setEditRotaId(rid);
+      const next = new URLSearchParams(searchParams);
+      next.delete("editRota");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const sortedRotas = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return [...rotas].sort((a, b) => {
+      const da = new Date(a.shiftDate).getTime();
+      const db = new Date(b.shiftDate).getTime();
+      const aUp = new Date(a.shiftDate) >= today;
+      const bUp = new Date(b.shiftDate) >= today;
+      if (aUp !== bUp) return aUp ? -1 : 1;
+      if (aUp) return da - db;
+      return db - da;
+    });
+  }, [rotas]);
+
   const [deleteModal, setDeleteModal] = useState<{
     open: boolean;
     rotaId: string | null;
@@ -25,18 +63,10 @@ export default function RotaSchedules() {
     shiftDate: "",
   });
 
-  const handleAddSchedule = () => {
-    navigate("/admin/create-rota");
-  };
-
-  const handleEditSchedule = (id: string) => {
-    navigate(`/admin/edit-rota/${id}`);
-  };
-
-  const handleDeleteClick = (id: string, staffName: string, shiftDate: string) => {
+  const handleDeleteClick = (rotaId: string, staffName: string, shiftDate: string) => {
     setDeleteModal({
       open: true,
-      rotaId: id,
+      rotaId,
       staffName,
       shiftDate: formatDate(shiftDate),
     });
@@ -45,10 +75,10 @@ export default function RotaSchedules() {
   const handleDeleteConfirm = async () => {
     if (!deleteModal.rotaId) return;
 
-    const success = await removeRota(deleteModal.rotaId);
-    if (success) {
+    try {
+      await removeRota(deleteModal.rotaId);
       toast.success("Schedule deleted successfully");
-    } else {
+    } catch {
       toast.error("Failed to delete schedule");
     }
 
@@ -70,12 +100,22 @@ export default function RotaSchedules() {
             </p>
           </div>
           <button
-            onClick={handleAddSchedule}
+            type="button"
+            onClick={() => setCreateOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            <Plus className="h-4 w-4" /> Add New Schedule
+            <Plus className="h-4 w-4" /> Create Rota
           </button>
         </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-sm"
+          >
+            {error}
+          </div>
+        )}
 
         <div className="bg-card rounded-xl border border-border overflow-x-auto">
           {loading && rotas.length === 0 ? (
@@ -92,13 +132,14 @@ export default function RotaSchedules() {
                 No schedules yet
               </h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Get started by creating your first duty schedule
+                Create a rota to assign shifts to staff
               </p>
               <button
-                onClick={handleAddSchedule}
+                type="button"
+                onClick={() => setCreateOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
               >
-                <Plus className="h-4 w-4" /> Add New Schedule
+                <Plus className="h-4 w-4" /> Create Rota
               </button>
             </div>
           ) : (
@@ -109,13 +150,16 @@ export default function RotaSchedules() {
                     Date
                   </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground">
-                    Staff Name
+                    Staff name
                   </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden md:table-cell">
-                    Shift Time
+                    Shift time
                   </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden lg:table-cell">
                     Department
+                  </th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground">
+                    Status
                   </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground">
                     Actions
@@ -123,7 +167,7 @@ export default function RotaSchedules() {
                 </tr>
               </thead>
               <tbody>
-                {rotas.map((rota) => (
+                {sortedRotas.map((rota) => (
                   <tr
                     key={rota.id}
                     className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors"
@@ -140,16 +184,21 @@ export default function RotaSchedules() {
                     <td className="py-3 px-5 text-foreground hidden lg:table-cell">
                       {rota.department}
                     </td>
+                    <td className="py-3 px-5 text-foreground capitalize">
+                      {rota.status || "scheduled"}
+                    </td>
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditSchedule(rota.id)}
+                          type="button"
+                          onClick={() => setEditRotaId(rota.id)}
                           className="p-1.5 rounded-md hover:bg-accent text-primary transition-colors"
                           aria-label={`Edit schedule for ${rota.staffName}`}
                         >
                           <Pencil className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <button
+                          type="button"
                           onClick={() =>
                             handleDeleteClick(rota.id, rota.staffName, rota.shiftDate)
                           }
@@ -168,9 +217,28 @@ export default function RotaSchedules() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      <CreateRotaDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        staff={staff}
+        onSaved={() => toast.success("Rota saved")}
+      />
+
+      <CreateRotaDialog
+        open={editRotaId != null}
+        onOpenChange={(o) => {
+          if (!o) setEditRotaId(null);
+        }}
+        staff={staff}
+        editRotaId={editRotaId ?? undefined}
+        onSaved={() => {
+          toast.success("Schedule updated");
+          setEditRotaId(null);
+        }}
+      />
+
       {deleteModal.open && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           role="dialog"
           aria-modal="true"
@@ -188,7 +256,7 @@ export default function RotaSchedules() {
               </div>
               <div className="flex-1">
                 <h3 id="delete-rota-modal-title" className="text-lg font-semibold text-foreground">
-                  Delete Schedule
+                  Delete schedule
                 </h3>
                 <p className="text-muted-foreground text-sm mt-1">
                   Are you sure you want to delete the schedule for{" "}
@@ -199,12 +267,13 @@ export default function RotaSchedules() {
                   <span className="font-medium text-foreground">
                     {deleteModal.shiftDate}
                   </span>
-                  ? This action cannot be undone.
+                  ? This cannot be undone.
                 </p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
+                type="button"
                 onClick={handleDeleteCancel}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
@@ -212,6 +281,7 @@ export default function RotaSchedules() {
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDeleteConfirm}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"

@@ -1,153 +1,101 @@
 import { useState, useEffect, useCallback } from "react";
-import { USE_MOCK_DATA } from "@/lib/config";
-
-// Mock data imports
 import {
-  Rota,
-  getRotas,
-  getRotaById,
-  getRotasByStaff,
-  getUpcomingRotas,
-  getRecentRotas,
   createRota,
-  updateRota,
   deleteRota,
+  getRotaById,
   subscribeToRotas,
-} from "@/lib/rotaData";
+  updateRota,
+  type RotaRecord,
+} from "@/services/rotaService";
+import { userFacingFirestoreSubscriptionError } from "@/lib/firebaseQueryErrors";
 
-// Firebase imports
-import {
-  FirebaseRota,
-  getFirebaseRotas,
-  getFirebaseRotaById,
-  getFirebaseRotasByStaff,
-  createFirebaseRota,
-  updateFirebaseRota,
-  deleteFirebaseRota,
-  subscribeToFirebaseRotas,
-} from "@/lib/firebaseRotas";
+export type Rota = RotaRecord;
 
-// Re-export types
-export type { Rota };
-
-/**
- * Hook for accessing and managing rota data
- * Supports both mock data and Firebase based on USE_MOCK_DATA config
- */
 export function useRotas() {
-  const [rotas, setRotas] = useState<Rota[]>([]);
+  const [rotas, setRotas] = useState<RotaRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize and subscribe to data changes
   useEffect(() => {
-    if (USE_MOCK_DATA) {
-      setRotas(getRotas());
-      setLoading(false);
-      
-      const unsubscribe = subscribeToRotas(() => {
-        setRotas(getRotas());
-      });
-      return unsubscribe;
-    } else {
-      const unsubscribe = subscribeToFirebaseRotas((data) => {
-        setRotas(data as Rota[]);
+    const unsub = subscribeToRotas(
+      (list) => {
+        setRotas(list);
         setLoading(false);
-      });
-      return unsubscribe;
-    }
+        setError(null);
+      },
+      (e) => {
+        setError(userFacingFirestoreSubscriptionError("subscribeToRotas (admin rotas list)", e));
+        setLoading(false);
+      }
+    );
+    return unsub;
   }, []);
 
   const addRota = useCallback(
-    async (data: Omit<Rota, "id" | "createdAt">) => {
-      setLoading(true);
-      try {
-        if (USE_MOCK_DATA) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          const newRota = createRota(data);
-          setLoading(false);
-          return newRota;
-        } else {
-          const newRota = await createFirebaseRota(data);
-          setLoading(false);
-          return newRota as Rota;
-        }
-      } catch (error) {
-        setLoading(false);
-        throw error;
-      }
+    async (data: Omit<RotaRecord, "id" | "createdAt" | "status">) => {
+      return createRota(data);
     },
     []
   );
 
   const editRota = useCallback(
-    async (id: string, data: Partial<Omit<Rota, "id" | "createdAt">>) => {
-      setLoading(true);
-      try {
-        if (USE_MOCK_DATA) {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          const updated = updateRota(id, data);
-          setLoading(false);
-          return updated;
-        } else {
-          await updateFirebaseRota(id, data);
-          const updated = rotas.find((r) => r.id === id);
-          setLoading(false);
-          return updated ? { ...updated, ...data } : null;
-        }
-      } catch (error) {
-        setLoading(false);
-        throw error;
-      }
+    async (
+      id: string,
+      data: Partial<
+        Pick<
+          RotaRecord,
+          | "staffId"
+          | "staffAuthUid"
+          | "staffName"
+          | "department"
+          | "shiftDate"
+          | "shiftTime"
+          | "status"
+        >
+      >
+    ) => {
+      await updateRota(id, data);
+      const updated = rotas.find((r) => r.id === id);
+      return updated ? { ...updated, ...data } : null;
     },
     [rotas]
   );
 
   const removeRota = useCallback(async (id: string) => {
-    setLoading(true);
-    try {
-      if (USE_MOCK_DATA) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        const success = deleteRota(id);
-        setLoading(false);
-        return success;
-      } else {
-        await deleteFirebaseRota(id);
-        setLoading(false);
-        return true;
-      }
-    } catch (error) {
-      setLoading(false);
-      throw error;
-    }
+    await deleteRota(id);
+    return true;
   }, []);
 
-  const getRota = useCallback(
-    async (id: string) => {
-      if (USE_MOCK_DATA) {
-        return getRotaById(id);
-      } else {
-        return (await getFirebaseRotaById(id)) as Rota | null;
-      }
-    },
-    []
-  );
+  const getRota = useCallback(async (id: string) => getRotaById(id), []);
 
   const getStaffRotas = useCallback(
-    async (staffNameOrId: string) => {
-      if (USE_MOCK_DATA) {
-        return getRotasByStaff(staffNameOrId);
-      } else {
-        return (await getFirebaseRotasByStaff(staffNameOrId)) as Rota[];
-      }
+    async (staffUid: string, displayName?: string) => {
+      const filtered = rotas.filter((r) => {
+        if (staffUid && r.staffAuthUid === staffUid) return true;
+        if (
+          staffUid &&
+          (!r.staffAuthUid || r.staffAuthUid === "") &&
+          r.staffId === staffUid
+        )
+          return true;
+        if (
+          displayName &&
+          r.staffName.toLowerCase() === displayName.toLowerCase()
+        )
+          return true;
+        return false;
+      });
+      return filtered.sort(
+        (a, b) => new Date(a.shiftDate).getTime() - new Date(b.shiftDate).getTime()
+      );
     },
-    []
+    [rotas]
   );
 
-  // These helper functions work on the current state
   const getUpcoming = useCallback(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     return rotas
       .filter((r) => new Date(r.shiftDate) >= today)
       .sort(
@@ -169,6 +117,7 @@ export function useRotas() {
   return {
     rotas,
     loading,
+    error,
     addRota,
     editRota,
     removeRota,

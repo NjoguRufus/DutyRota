@@ -1,13 +1,23 @@
-import { LayoutDashboard, Users, CalendarPlus, CalendarDays, BarChart3, Settings, LogOut, Menu, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarDays,
+  BarChart3,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { SidebarBrandSection } from "@/components/layout/SidebarBrandSection";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
   { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
   { title: "Manage Staff", url: "/admin/manage-staff", icon: Users },
-  { title: "Create Rota", url: "/admin/create-rota", icon: CalendarPlus },
   { title: "Rota Schedules", url: "/admin/rota-schedules", icon: CalendarDays },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
   { title: "Settings", url: "/admin/settings", icon: Settings },
@@ -26,29 +36,41 @@ export function MobileSidebar() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="md:hidden p-2 text-foreground">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-lg p-2 text-foreground transition-colors hover:bg-muted md:hidden"
+        aria-label="Open menu"
+      >
         <Menu className="h-6 w-6" />
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-foreground/20" onClick={() => setOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-card shadow-xl flex flex-col">
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">CM</span>
-                </div>
-                <div>
-                  <h1 className="font-bold text-sm text-foreground leading-tight">Cape Media</h1>
-                  <p className="text-xs text-muted-foreground leading-tight">Staff Rota System</p>
-                </div>
+          <button
+            type="button"
+            className="absolute inset-0 bg-foreground/25 backdrop-blur-[2px]"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          />
+          <aside className="absolute bottom-0 left-0 top-0 flex w-[min(18rem,88vw)] flex-col border-r border-border/80 bg-card shadow-2xl shadow-black/10">
+            <div className="flex items-start justify-between gap-2 border-b border-border/70 p-4">
+              <div className="min-w-0 flex-1">
+                <SidebarBrandSection />
               </div>
-              <button onClick={() => setOpen(false)}>
-                <X className="h-5 w-5 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <nav className="flex-1 p-4 space-y-1">
+            <nav
+              className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overflow-x-hidden p-3"
+              aria-label="Main navigation"
+            >
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
@@ -56,27 +78,40 @@ export function MobileSidebar() {
                     key={item.title}
                     to={item.url}
                     end
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    className={cn(
+                      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    }`}
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                        : "text-muted-foreground hover:bg-accent/70 hover:text-foreground"
+                    )}
                     activeClassName=""
                     onClick={() => setOpen(false)}
                   >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.title}</span>
+                    <span
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors",
+                        isActive
+                          ? "bg-white/15 text-primary-foreground"
+                          : "bg-muted/70 text-muted-foreground group-hover:bg-muted group-hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                    </span>
+                    <span className="truncate">{item.title}</span>
                   </NavLink>
                 );
               })}
             </nav>
-            <div className="p-4 border-t border-border">
+            <div className="border-t border-border/70 p-3">
               <button
+                type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors w-full"
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
-                <LogOut className="h-5 w-5" />
-                <span>Log Out</span>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60">
+                  <LogOut className="h-[18px] w-[18px]" />
+                </span>
+                <span>Log out</span>
               </button>
             </div>
           </aside>

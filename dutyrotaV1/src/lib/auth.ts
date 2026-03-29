@@ -2,10 +2,11 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User as FirebaseUser,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth, db, getSecondaryAuth } from "./firebase";
 
 export type UserRole = "admin" | "staff";
 
@@ -25,11 +26,6 @@ let authStateListeners: ((user: AppUser | null) => void)[] = [];
  */
 export function onAuthChange(callback: (user: AppUser | null) => void): () => void {
   authStateListeners.push(callback);
-  
-  // Immediately call with current state
-  callback(currentUser);
-  
-  // Return unsubscribe function
   return () => {
     authStateListeners = authStateListeners.filter((cb) => cb !== callback);
   };
@@ -117,6 +113,12 @@ export async function login(
       case "auth/invalid-credential":
         errorMessage = "Invalid email or password.";
         break;
+      case "auth/invalid-email":
+        errorMessage = "Please enter a valid email address.";
+        break;
+      case "auth/user-disabled":
+        errorMessage = "This account has been disabled. Contact your administrator.";
+        break;
       case "auth/too-many-requests":
         errorMessage = "Too many failed attempts. Please try again later.";
         break;
@@ -186,56 +188,79 @@ export async function createUserProfile(
   });
 }
 
-// ============================================================
-// LEGACY MOCK AUTH - Keep for fallback/testing
-// ============================================================
-
-const MOCK_USERS = [
-  { email: "admin@capemedia.co.ke", password: "admin123", role: "admin" as const, name: "Admin User" },
-  { email: "staff@capemedia.co.ke", password: "staff123", role: "staff" as const, name: "Anne Njoroge" },
-];
-
-/**
- * Mock login for local testing without Firebase
- */
-export function mockLogin(
+async function createAuthUserWithProfile(
   email: string,
-  password: string
-): { success: boolean; user?: AppUser; error?: string } {
-  const found = MOCK_USERS.find((u) => u.email === email && u.password === password);
-  if (!found) {
-    return { success: false, error: "Invalid email or password" };
-  }
-  const user: AppUser = {
-    uid: `mock-${found.email}`,
-    email: found.email,
-    role: found.role,
-    name: found.name,
-  };
-  localStorage.setItem("auth_user", JSON.stringify(user));
-  notifyListeners(user);
-  return { success: true, user };
-}
-
-/**
- * Mock logout for local testing
- */
-export function mockLogout(): void {
-  localStorage.removeItem("auth_user");
-  notifyListeners(null);
-}
-
-/**
- * Initialize mock auth from localStorage (for page refresh)
- */
-export function initMockAuth(): void {
-  const stored = localStorage.getItem("auth_user");
-  if (stored) {
-    try {
-      const user = JSON.parse(stored) as AppUser;
-      notifyListeners(user);
-    } catch {
-      localStorage.removeItem("auth_user");
+  password: string,
+  name: string,
+  role: UserRole
+): Promise<{ uid: string } | { error: string }> {
+  const trimmed = email.trim();
+  try {
+    const secondary = getSecondaryAuth();
+    const cred = await createUserWithEmailAndPassword(secondary, trimmed, password);
+    await createUserProfile(cred.user.uid, trimmed, name, role);
+    await signOut(secondary);
+    return { uid: cred.user.uid };
+  } catch (error: unknown) {
+    const code = (error as { code?: string })?.code;
+    if (code === "auth/email-already-in-use") {
+      return {
+        error:
+          "This email is already registered. Use another email or remove the old account in Firebase Console.",
+      };
     }
+    if (code === "auth/weak-password") {
+      return { error: "Password is too weak. Use at least 6 characters." };
+    }
+    if (code === "auth/invalid-email") {
+      return { error: "Invalid email address." };
+    }
+    console.error("createAuthUserWithProfile:", error);
+    return {
+      error:
+        "Could not create account. Check Firebase Auth is enabled and Firestore rules allow bootstrap (see FIREBASE_SETUP).",
+    };
   }
 }
+
+/**
+ * Create a Firebase Auth user for staff (admin stays signed in on primary app).
+ * Writes Firestore users/{uid} with role staff.
+ */
+export async function createStaffAuthAccount(
+  email: string,
+  password: string,
+  name: string
+): Promise<{ uid: string } | { error: string }> {
+  return createAuthUserWithProfile(email, password, name, "staff");
+}
+
+/**
+ * Create first / extra admin account from the login screen (secondary Auth + Firestore profile).
+ * Remove the temporary UI in production; tighten Firestore rules after setup.
+ */
+export async function createAdminAuthAccount(
+  email: string,
+  password: string,
+  name: string
+): Promise<{ uid: string } | { error: string }> {
+  return createAuthUserWithProfile(email, password, name, "admin");
+}
+
+/**
+ * Send password reset email to a staff member (Firebase mode).
+ */
+export async function sendStaffPasswordResetEmail(email: string): Promise<{ ok: true } | { error: string }> {
+  try {
+    await sendPasswordResetEmail(auth, email.trim());
+    return { ok: true };
+  } catch (error: unknown) {
+    const code = (error as { code?: string })?.code;
+    if (code === "auth/user-not-found") {
+      return { error: "No account found for this email." };
+    }
+    console.error("sendStaffPasswordResetEmail:", error);
+    return { error: "Could not send reset email." };
+  }
+}
+

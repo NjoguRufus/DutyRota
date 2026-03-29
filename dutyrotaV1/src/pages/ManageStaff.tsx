@@ -1,58 +1,81 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Pencil, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useStaff } from "@/hooks/useStaff";
+import { StaffFormDialog } from "@/components/staff/StaffFormDialog";
+import { formatDate } from "@/lib/rotaUtils";
 import { toast } from "sonner";
 
-export default function ManageStaff() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { employees, removeEmployee, loading } = useEmployees();
+function formatCreatedAt(iso: string): string {
+  if (!iso) return "—";
+  const day = iso.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day)) return formatDate(day);
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : formatDate(d.toISOString().slice(0, 10));
+}
 
-  // Delete confirmation state
+export default function ManageStaff() {
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { staff, removeStaffMember, loading, error } = useStaff();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editStaffId, setEditStaffId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const st = location.state as { openAddStaff?: boolean } | null;
+    if (st?.openAddStaff) {
+      setAddOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const edit = searchParams.get("edit");
+    if (edit) {
+      setEditStaffId(edit);
+      const next = new URLSearchParams(searchParams);
+      next.delete("edit");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const [deleteModal, setDeleteModal] = useState<{
     open: boolean;
-    employeeId: string | null;
-    employeeName: string;
+    staffId: string | null;
+    staffName: string;
   }>({
     open: false,
-    employeeId: null,
-    employeeName: "",
+    staffId: null,
+    staffName: "",
   });
-
-  const handleAddEmployee = () => {
-    navigate("/admin/create-employee");
-  };
-
-  const handleEditEmployee = (id: string) => {
-    navigate(`/admin/edit-employee/${id}`);
-  };
 
   const handleDeleteClick = (id: string, name: string) => {
     setDeleteModal({
       open: true,
-      employeeId: id,
-      employeeName: name,
+      staffId: id,
+      staffName: name,
     });
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteModal.employeeId) return;
+    if (!deleteModal.staffId) return;
 
-    const success = await removeEmployee(deleteModal.employeeId);
-    if (success) {
-      toast.success(`${deleteModal.employeeName} has been removed`);
-    } else {
-      toast.error("Failed to delete employee");
+    try {
+      await removeStaffMember(deleteModal.staffId);
+      toast.success(`${deleteModal.staffName} has been removed`);
+    } catch {
+      toast.error("Failed to delete staff member");
     }
 
-    setDeleteModal({ open: false, employeeId: null, employeeName: "" });
+    setDeleteModal({ open: false, staffId: null, staffName: "" });
   };
 
   const handleDeleteCancel = () => {
-    setDeleteModal({ open: false, employeeId: null, employeeName: "" });
+    setDeleteModal({ open: false, staffId: null, staffName: "" });
   };
 
   return (
@@ -62,39 +85,50 @@ export default function ManageStaff() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Manage Staff</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              View and manage all employees ({employees.length} total)
+              View and manage all staff ({staff.length} total)
             </p>
           </div>
           <button
-            onClick={handleAddEmployee}
+            type="button"
+            onClick={() => setAddOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            <Plus className="h-4 w-4" /> Add Employee
+            <Plus className="h-4 w-4" /> Add Staff Member
           </button>
         </div>
 
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-sm"
+          >
+            {error}
+          </div>
+        )}
+
         <div className="bg-card rounded-xl border border-border overflow-x-auto">
-          {loading && employees.length === 0 ? (
+          {loading && staff.length === 0 ? (
             <div className="p-12 text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              <p className="text-muted-foreground text-sm mt-3">Loading employees...</p>
+              <p className="text-muted-foreground text-sm mt-3">Loading staff...</p>
             </div>
-          ) : employees.length === 0 ? (
+          ) : staff.length === 0 ? (
             <div className="p-12 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <Plus className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">
-                No employees yet
+                No staff yet
               </h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Get started by adding your first employee
+                Add a staff member to assign rotas and enable staff portal login
               </p>
               <button
-                onClick={handleAddEmployee}
+                type="button"
+                onClick={() => setAddOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
               >
-                <Plus className="h-4 w-4" /> Add Employee
+                <Plus className="h-4 w-4" /> Add Staff Member
               </button>
             </div>
           ) : (
@@ -102,7 +136,7 @@ export default function ManageStaff() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground">
-                    Employee Name
+                    Full name
                   </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground">
                     Department
@@ -113,44 +147,52 @@ export default function ManageStaff() {
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden lg:table-cell">
                     Phone
                   </th>
+                  <th className="text-left py-3 px-5 font-medium text-muted-foreground hidden xl:table-cell">
+                    Added
+                  </th>
                   <th className="text-left py-3 px-5 font-medium text-muted-foreground">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {employees.map((employee) => (
+                {staff.map((member) => (
                   <tr
-                    key={employee.id}
+                    key={member.id}
                     className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors"
                   >
                     <td className="py-3 px-5 text-foreground font-medium">
-                      {employee.name}
+                      {member.fullName}
                     </td>
                     <td className="py-3 px-5 text-foreground">
-                      {employee.department}
+                      {member.department}
                     </td>
                     <td className="py-3 px-5 text-foreground hidden md:table-cell">
-                      {employee.email}
+                      {member.email}
                     </td>
                     <td className="py-3 px-5 text-foreground hidden lg:table-cell">
-                      {employee.phoneNumber}
+                      {member.phone}
+                    </td>
+                    <td className="py-3 px-5 text-foreground hidden xl:table-cell text-muted-foreground">
+                      {formatCreatedAt(member.createdAt)}
                     </td>
                     <td className="py-3 px-5">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleEditEmployee(employee.id)}
+                          type="button"
+                          onClick={() => setEditStaffId(member.id)}
                           className="p-1.5 rounded-md hover:bg-accent text-primary transition-colors"
-                          aria-label={`Edit ${employee.name}`}
+                          aria-label={`Edit ${member.fullName}`}
                         >
                           <Pencil className="h-4 w-4" aria-hidden="true" />
                         </button>
                         <button
+                          type="button"
                           onClick={() =>
-                            handleDeleteClick(employee.id, employee.name)
+                            handleDeleteClick(member.id, member.fullName)
                           }
                           className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive transition-colors"
-                          aria-label={`Delete ${employee.name}`}
+                          aria-label={`Delete ${member.fullName}`}
                         >
                           <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -164,9 +206,29 @@ export default function ManageStaff() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      <StaffFormDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        mode="add"
+        adminUid={user?.uid}
+        onSaved={() => toast.success("Staff member added")}
+      />
+
+      <StaffFormDialog
+        open={editStaffId != null}
+        onOpenChange={(o) => {
+          if (!o) setEditStaffId(null);
+        }}
+        mode="edit"
+        staffFirestoreId={editStaffId}
+        onSaved={() => {
+          toast.success("Staff member updated");
+          setEditStaffId(null);
+        }}
+      />
+
       {deleteModal.open && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           role="dialog"
           aria-modal="true"
@@ -184,19 +246,20 @@ export default function ManageStaff() {
               </div>
               <div className="flex-1">
                 <h3 id="delete-modal-title" className="text-lg font-semibold text-foreground">
-                  Delete Employee
+                  Delete staff member
                 </h3>
                 <p className="text-muted-foreground text-sm mt-1">
-                  Are you sure you want to delete{" "}
+                  Are you sure you want to remove{" "}
                   <span className="font-medium text-foreground">
-                    {deleteModal.employeeName}
+                    {deleteModal.staffName}
                   </span>
-                  ? This action cannot be undone.
+                  ? Their Firestore record will be removed. Their Firebase Authentication account is not deleted automatically.
                 </p>
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
+                type="button"
                 onClick={handleDeleteCancel}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg border border-border text-foreground text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
@@ -204,6 +267,7 @@ export default function ManageStaff() {
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDeleteConfirm}
                 disabled={loading}
                 className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"

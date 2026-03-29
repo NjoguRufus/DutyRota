@@ -1,14 +1,15 @@
-import { useTheme } from "next-themes";
+import type { ComponentProps } from "react";
 import { Toaster as Sonner, toast } from "sonner";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>;
+type ToasterProps = ComponentProps<typeof Sonner>;
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+function ToasterInner({ ...props }: ToasterProps) {
+  const { preferences } = useUserPreferences();
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={preferences.theme === "dark" ? "dark" : "light"}
       className="toaster group"
       toastOptions={{
         classNames: {
@@ -22,6 +23,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       {...props}
     />
   );
-};
+}
+
+const Toaster = (props: ToasterProps) => <ToasterInner {...props} />;
 
 export { Toaster, toast };

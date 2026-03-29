@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp, getApps } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -20,6 +20,18 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+const SECONDARY_APP_NAME = "DutyRotaStaffSignup";
+
+/**
+ * Secondary Firebase Auth instance so admins can create staff accounts
+ * with createUserWithEmailAndPassword without signing out the admin session.
+ */
+export function getSecondaryAuth(): Auth {
+  const existing = getApps().find((a) => a.name === SECONDARY_APP_NAME);
+  const secondaryApp = existing ?? initializeApp(firebaseConfig, SECONDARY_APP_NAME);
+  return getAuth(secondaryApp);
+}
 
 // Initialize Analytics only in browser environment (not during SSR)
 export const initAnalytics = async () => {

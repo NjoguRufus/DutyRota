@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        login: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        "login-display": ['Outfit', "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -68,6 +72,18 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
+        "login-fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "login-slide-up": {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "login-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
         "accordion-down": {
           from: {
             height: "0",
@@ -86,6 +102,9 @@ export default {
         },
       },
       animation: {
+        "login-fade-in": "login-fade-in 0.7s ease-out both",
+        "login-slide-up": "login-slide-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both",
+        "login-float-slow": "login-float 8s ease-in-out infinite",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },

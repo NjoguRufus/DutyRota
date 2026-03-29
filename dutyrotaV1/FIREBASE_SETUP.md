@@ -22,6 +22,15 @@ VITE_FIREBASE_MEASUREMENT_ID=...
 
 Copy `.env.example` to `.env` and fill in your Firebase project values.
 
+## First admin from the app (temporary)
+
+On the **Admin Login** page (`/`), expand **Create admin account (temporary setup)** to register an admin email and password without using the Console first.
+
+- **Firebase mode**: Requires **Email/Password** enabled in Authentication and **deployed** `firestore.rules` that include `temporaryBootstrapAdminProfile()` (allows a one-time-style write of an admin profile when nobody is logged in). After your admin works, **remove that helper and the public create path** from rules, and remove or hide the button on the login page before production.
+- **Mock mode**: The account is stored in this browser (`localStorage`) only.
+
+You can still use the Console method below if you prefer.
+
 ## Initial Setup
 
 ### Step 1: Create Users in Firebase Console
