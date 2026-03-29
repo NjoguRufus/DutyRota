@@ -90,7 +90,7 @@ The project is **ready to proceed with structured frontend feature implementatio
 
 - **Global styling artifacts from Vite scaffold**
   - `src/App.css` still contains default Vite React styles (logo, spin animation, centered `#root`), which are inconsistent with the tailwind layout actually used.
-  - No project‑specific README describing this system; `README.md` is Lovable boilerplate.
+  - `README.md` describes the Cape Media duty rota system (verify it stays aligned with the product).
 
 ---
 
@@ -415,7 +415,7 @@ The project is **ready to proceed with structured frontend feature implementatio
 
 - **Legacy scaffold artifacts**
   - `src/App.css` still contains Vite demo styles and may conflict with layout assumptions.
-  - `README.md` is a generic Lovable template and does not describe this system.
+  - `README.md` should remain aligned with the Cape Media duty rota product as features evolve.
 
 - **Auth and routing**
   - Route guards are implemented ad‑hoc in pages (`useEffect` checks) rather than centralized.
