@@ -13,7 +13,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 const COLLECTION = "rotas";
 
@@ -27,6 +27,7 @@ export interface RotaRecord {
   department: string;
   shiftDate: string;
   shiftTime: string;
+  createdBy: string;
   status: string;
   createdAt: string;
 }
@@ -46,6 +47,7 @@ function mapRotaDoc(id: string, data: Record<string, unknown>): RotaRecord {
     department: String(data.department ?? ""),
     shiftDate: String(data.shiftDate ?? ""),
     shiftTime: String(data.shiftTime ?? ""),
+    createdBy: String(data.createdBy ?? ""),
     status: String(data.status ?? "scheduled"),
     createdAt,
   };
@@ -59,13 +61,17 @@ export async function createRota(input: {
   shiftDate: string;
   shiftTime: string;
 }): Promise<RotaRecord> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not authenticated");
+
   const docRef = await addDoc(collection(db, COLLECTION), {
     staffId: input.staffId,
-    staffAuthUid: input.staffAuthUid,
+    staffAuthUid: input.staffAuthUid ?? "",
     staffName: input.staffName,
     department: input.department,
     shiftDate: input.shiftDate,
     shiftTime: input.shiftTime,
+    createdBy: user.uid,
     status: "scheduled",
     createdAt: serverTimestamp(),
   });
@@ -76,7 +82,10 @@ export async function createRota(input: {
 }
 
 export async function getAllRotas(): Promise<RotaRecord[]> {
-  const q = query(collection(db, COLLECTION), orderBy("shiftDate", "desc"));
+  const q = query(
+    collection(db, COLLECTION),
+    orderBy("shiftDate", "desc")
+  );
   const snap = await getDocs(q);
   return snap.docs.map((d) => mapRotaDoc(d.id, d.data() as Record<string, unknown>));
 }
@@ -85,7 +94,10 @@ export function subscribeToRotas(
   onNext: (rotas: RotaRecord[]) => void,
   onError?: (e: Error) => void
 ): () => void {
-  const q = query(collection(db, COLLECTION), orderBy("shiftDate", "desc"));
+  const q = query(
+    collection(db, COLLECTION),
+    orderBy("shiftDate", "desc")
+  );
   return onSnapshot(
     q,
     (snap) => {

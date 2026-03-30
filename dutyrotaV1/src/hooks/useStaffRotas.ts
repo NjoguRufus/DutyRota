@@ -5,7 +5,6 @@ import {
   type RotaRecord,
 } from "@/services/rotaService";
 import { userFacingFirestoreSubscriptionError } from "@/lib/firebaseQueryErrors";
-
 export function useStaffRotas(staffAuthUid: string | undefined) {
   const [rotas, setRotas] = useState<RotaRecord[]>([]);
   const [loading, setLoading] = useState(true);

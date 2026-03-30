@@ -113,14 +113,20 @@ export function CreateRotaDialog({
         const uid = member.authUid?.trim();
         if (uid) {
           const timeLabel = getShiftTimeDisplay(shiftTime);
-          await createNotification({
-            userType: "staff",
-            targetUserId: uid,
-            title: "New Shift Assigned",
-            message: `You have been assigned a shift on ${shiftDate} at ${timeLabel}.`,
-            type: "rota_assigned",
-            read: false,
-          });
+          try {
+            await createNotification({
+              userType: "staff",
+              targetUserId: uid,
+              title: "New Shift Assigned",
+              message: `You have been assigned a shift on ${shiftDate} at ${timeLabel}.`,
+              type: "rota_assigned",
+              read: false,
+            });
+          } catch (err) {
+            // Rota creation succeeded; notification is a best-effort follow-up.
+            console.error("[DutyRota] createNotification failed after rota creation:", err);
+            toast.warning("Rota saved, but the staff notification could not be sent.");
+          }
         } else {
           toast.warning(
             "Rota saved. This staff member has no portal login linked, so no notification was sent."

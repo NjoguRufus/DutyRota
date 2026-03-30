@@ -15,6 +15,14 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'admin';
     }
 
+    function isManager() {
+      return isAuthenticated() && getUserRole() == 'manager';
+    }
+
+    function isAdminOrManager() {
+      return isAdmin() || isManager();
+    }
+
     function isStaff() {
       return isAuthenticated() && getUserRole() == 'staff';
     }
@@ -67,23 +75,26 @@ service cloud.firestore {
     }
 
     match /rotas/{rotaId} {
-      allow read: if isAdmin() || staffCanReadRota();
-      allow create: if isAdmin() && validRotaWrite(request.resource.data);
-      allow update: if isAdmin() && validRotaWrite(request.resource.data);
-      allow delete: if isAdmin();
+      allow read: if isAdminOrManager() || staffCanReadRota();
+      allow create: if isAdminOrManager() && validRotaWrite(request.resource.data);
+      allow update: if isAdminOrManager() && validRotaWrite(request.resource.data);
+      allow delete: if isAdminOrManager();
     }
 
     function validRotaWrite(data) {
       return data.keys().hasAll([
-          'staffId', 'staffAuthUid', 'staffName', 'shiftDate', 'shiftTime', 'department', 'status', 'createdAt'
+          'staffId', 'staffAuthUid', 'staffName', 'shiftDate', 'shiftTime', 'department', 'status', 'createdAt', 'createdBy'
         ])
         && data.staffId is string
+        // staffAuthUid can be empty (staff without linked portal login).
         && data.staffAuthUid is string
         && data.staffName is string
         && data.shiftDate is string
         && data.shiftTime is string
         && data.department is string
         && data.status is string
+        && data.createdBy is string
+        && data.createdBy.size() > 0
         && (data.createdAt == request.time || data.createdAt is timestamp);
     }
 
@@ -108,9 +119,9 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && notificationOwnerRead();
-      allow create: if isAdmin() && validNotificationCreate(request.resource.data);
+      allow create: if isAdminOrManager() && validNotificationCreate(request.resource.data);
       allow update: if isAuthenticated() && notificationOwnerRead();
-      allow delete: if isAdmin();
+      allow delete: if isAdminOrManager();
     }
 
     match /reports/{reportId} {
@@ -125,6 +136,13 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    // New collection name (if you migrate later): managers/admins can write; staff read-only.
+    // NOTE: Company scoping requires a stable company identifier shared by all users.
+    match /rotaSchedules/{rotaId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdminOrManager();
     }
   }
 }

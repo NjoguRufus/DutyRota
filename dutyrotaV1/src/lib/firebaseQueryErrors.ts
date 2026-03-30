@@ -53,6 +53,10 @@ export function userFacingFirestoreActionError(context: string, err: unknown): s
     console.error(`[DutyRota / Firestore] ${context}:`, err);
     return GENERIC_ACTION_ERROR;
   }
+  const code = errorCode(err);
+  if (code === "permission-denied") {
+    return "You do not have permission to create rota schedules.";
+  }
   const msg = errorMessage(err);
   return msg || GENERIC_ACTION_ERROR;
 }

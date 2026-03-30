@@ -8,15 +8,22 @@ import {
   type RotaRecord,
 } from "@/services/rotaService";
 import { userFacingFirestoreSubscriptionError } from "@/lib/firebaseQueryErrors";
+import { useAuth } from "@/hooks/useAuth";
 
 export type Rota = RotaRecord;
 
 export function useRotas() {
+  const { user } = useAuth();
   const [rotas, setRotas] = useState<RotaRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.uid) {
+      setRotas([]);
+      setLoading(false);
+      return;
+    }
     const unsub = subscribeToRotas(
       (list) => {
         setRotas(list);
@@ -29,7 +36,7 @@ export function useRotas() {
       }
     );
     return unsub;
-  }, []);
+  }, [user?.uid]);
 
   const addRota = useCallback(
     async (data: Omit<RotaRecord, "id" | "createdAt" | "status">) => {
